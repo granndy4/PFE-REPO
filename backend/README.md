@@ -11,8 +11,11 @@ mvn clean install
 mvn spring-boot:run
 
 ## Database
-- Default profile uses H2 in-memory database (no external DB needed).
-- To use PostgreSQL, set:
+- Default profile uses local MySQL with:
+	- URL: jdbc:mysql://localhost:3306/fuel_voucher
+	- Username: root
+	- Password: (empty)
+- You can override with:
 	- SPRING_DATASOURCE_URL
 	- SPRING_DATASOURCE_USERNAME
 	- SPRING_DATASOURCE_PASSWORD

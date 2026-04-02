@@ -23,6 +23,95 @@ export type MeResponse = {
   role: string
 }
 
+export type EntrepriseStatut = 'ACTIVE' | 'SUSPENDED' | 'CLOSED'
+
+export type Entreprise = {
+  id: number
+  societeId: number
+  codeEntreprise: string
+  raisonSociale: string
+  nomCourt: string | null
+  matriculeFiscal: string | null
+  adresseFacturation: string | null
+  nomContact: string | null
+  emailContact: string | null
+  telephoneContact: string | null
+  statut: EntrepriseStatut
+  creeLe: string
+  modifieLe: string
+}
+
+export type PageResponse<T> = {
+  content: T[]
+  number: number
+  size: number
+  totalElements: number
+  totalPages: number
+}
+
+export type EntreprisePayload = {
+  societeId: number
+  codeEntreprise: string
+  raisonSociale: string
+  nomCourt?: string | null
+  matriculeFiscal?: string | null
+  adresseFacturation?: string | null
+  nomContact?: string | null
+  emailContact?: string | null
+  telephoneContact?: string | null
+  statut?: EntrepriseStatut
+}
+
+export type EntrepriseQuery = {
+  societeId?: number
+  statut?: EntrepriseStatut
+  search?: string
+  page?: number
+  size?: number
+  sort?: string
+}
+
+export type VehiculeTypeCarburant = 'GASOLINE' | 'DIESEL' | 'GPL' | 'ELECTRIC' | 'OTHER'
+
+export type Vehicule = {
+  id: number
+  societeId: number
+  entrepriseId: number
+  employeId: number | null
+  immatriculation: string
+  codeFlotte: string | null
+  marque: string | null
+  modele: string | null
+  typeCarburant: VehiculeTypeCarburant
+  capaciteReservoirLitres: number | null
+  actif: boolean
+  creeLe: string
+  modifieLe: string
+}
+
+export type VehiculePayload = {
+  societeId: number
+  entrepriseId: number
+  employeId?: number | null
+  immatriculation: string
+  codeFlotte?: string | null
+  marque?: string | null
+  modele?: string | null
+  typeCarburant: VehiculeTypeCarburant
+  capaciteReservoirLitres?: number | null
+  actif?: boolean
+}
+
+export type VehiculeQuery = {
+  societeId?: number
+  entrepriseId?: number
+  actif?: boolean
+  search?: string
+  page?: number
+  size?: number
+  sort?: string
+}
+
 export type LoginRequest = {
   email: string
   password: string
@@ -47,6 +136,19 @@ function buildHeaders(includeAuth: boolean): HeadersInit {
   }
 
   return headers
+}
+
+function buildQueryString(query: Record<string, string | number | boolean | undefined>): string {
+  const searchParams = new URLSearchParams()
+
+  Object.entries(query).forEach(([key, value]) => {
+    if (value !== undefined) {
+      searchParams.set(key, String(value))
+    }
+  })
+
+  const built = searchParams.toString()
+  return built ? `?${built}` : ''
 }
 
 export async function fetchHealth(): Promise<HealthResponse> {
@@ -96,6 +198,133 @@ export async function fetchMe(): Promise<MeResponse> {
   }
 
   return response.json() as Promise<MeResponse>
+}
+
+export async function fetchEntreprises(query: EntrepriseQuery = {}): Promise<PageResponse<Entreprise>> {
+  const queryString = buildQueryString({
+    societeId: query.societeId,
+    statut: query.statut,
+    search: query.search,
+    page: query.page,
+    size: query.size,
+    sort: query.sort,
+  })
+
+  const response = await fetch(`${API_BASE_URL}/api/entreprises${queryString}`, {
+    headers: buildHeaders(true),
+  })
+
+  if (!response.ok) {
+    throw new Error('Could not load entreprises')
+  }
+
+  return response.json() as Promise<PageResponse<Entreprise>>
+}
+
+export async function createEntreprise(payload: EntreprisePayload): Promise<Entreprise> {
+  const response = await fetch(`${API_BASE_URL}/api/entreprises`, {
+    method: 'POST',
+    headers: buildHeaders(true),
+    body: JSON.stringify(payload),
+  })
+
+  if (!response.ok) {
+    throw new Error('Could not create entreprise')
+  }
+
+  return response.json() as Promise<Entreprise>
+}
+
+export async function updateEntreprise(id: number, payload: EntreprisePayload): Promise<Entreprise> {
+  const response = await fetch(`${API_BASE_URL}/api/entreprises/${id}`, {
+    method: 'PUT',
+    headers: buildHeaders(true),
+    body: JSON.stringify(payload),
+  })
+
+  if (!response.ok) {
+    throw new Error('Could not update entreprise')
+  }
+
+  return response.json() as Promise<Entreprise>
+}
+
+export async function updateEntrepriseStatut(id: number, statut: EntrepriseStatut): Promise<Entreprise> {
+  const response = await fetch(`${API_BASE_URL}/api/entreprises/${id}/statut`, {
+    method: 'PATCH',
+    headers: buildHeaders(true),
+    body: JSON.stringify({ statut }),
+  })
+
+  if (!response.ok) {
+    throw new Error('Could not update entreprise status')
+  }
+
+  return response.json() as Promise<Entreprise>
+}
+
+export async function fetchVehicules(query: VehiculeQuery = {}): Promise<PageResponse<Vehicule>> {
+  const queryString = buildQueryString({
+    societeId: query.societeId,
+    entrepriseId: query.entrepriseId,
+    actif: query.actif,
+    search: query.search,
+    page: query.page,
+    size: query.size,
+    sort: query.sort,
+  })
+
+  const response = await fetch(`${API_BASE_URL}/api/vehicules${queryString}`, {
+    headers: buildHeaders(true),
+  })
+
+  if (!response.ok) {
+    throw new Error('Could not load vehicules')
+  }
+
+  return response.json() as Promise<PageResponse<Vehicule>>
+}
+
+export async function createVehicule(payload: VehiculePayload): Promise<Vehicule> {
+  const response = await fetch(`${API_BASE_URL}/api/vehicules`, {
+    method: 'POST',
+    headers: buildHeaders(true),
+    body: JSON.stringify(payload),
+  })
+
+  if (!response.ok) {
+    throw new Error('Could not create vehicule')
+  }
+
+  return response.json() as Promise<Vehicule>
+}
+
+export async function updateVehicule(id: number, payload: VehiculePayload): Promise<Vehicule> {
+  const response = await fetch(`${API_BASE_URL}/api/vehicules/${id}`, {
+    method: 'PUT',
+    headers: buildHeaders(true),
+    body: JSON.stringify(payload),
+  })
+
+  if (!response.ok) {
+    throw new Error('Could not update vehicule')
+  }
+
+  return response.json() as Promise<Vehicule>
+}
+
+export async function updateVehiculeActif(id: number, actif: boolean): Promise<Vehicule> {
+  const response = await fetch(`${API_BASE_URL}/api/vehicules/${id}/actif`, {
+    method: 'PATCH',
+    headers: buildHeaders(true),
+    body: JSON.stringify({ actif }),
+  })
+
+  if (!response.ok) {
+    throw new Error('Could not update vehicule status')
+  }
+
+  return response.json() as Promise<Vehicule>
 }
 
 export function getStoredToken(): string | null {

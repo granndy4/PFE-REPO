@@ -19,30 +19,30 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
 @Entity
-@Table(name = "users")
+@Table(name = "utilisateurs")
 public class UserAccount implements UserDetails {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false, length = 120)
+    @Column(name = "nom", nullable = false, length = 120)
     private String name;
 
-    @Column(nullable = false, unique = true, length = 160)
+    @Column(name = "email", nullable = false, unique = true, length = 160)
     private String email;
 
-    @Column(nullable = false, length = 255)
+    @Column(name = "mot_de_passe", nullable = false, length = 255)
     private String password;
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 20)
+    @Column(name = "role_systeme", nullable = false, length = 20)
     private Role role;
 
-    @Column(nullable = false)
+    @Column(name = "actif", nullable = false)
     private boolean enabled = true;
 
-    @Column(name = "created_at", nullable = false)
+    @Column(name = "cree_le", nullable = false)
     private Instant createdAt;
 
     @PrePersist

@@ -131,8 +131,128 @@ input {
   font-size: 14px;
 }
 
+select,
+textarea {
+  border-radius: 10px;
+  border: 1px solid #cbd5e1;
+  padding: 8px 10px;
+  font-size: 14px;
+  font-family: inherit;
+  background: #fff;
+}
+
+textarea {
+  resize: vertical;
+}
+
+.workspace {
+  margin-top: 18px;
+  border-top: 1px solid #e2e8f0;
+  padding-top: 18px;
+}
+
+.workspace h2 {
+  margin: 0;
+}
+
+.filterRow {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 12px;
+  align-items: end;
+  margin: 12px 0;
+}
+
+.resultText {
+  margin: 4px 0 12px;
+  color: #334155;
+  font-weight: 600;
+}
+
+.paginationRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 12px;
+  font-size: 14px;
+}
+
+.workspaceGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.enterpriseList {
+  display: grid;
+  gap: 12px;
+  align-content: start;
+}
+
+.enterpriseItem {
+  border: 1px solid #dbeafe;
+  border-radius: 12px;
+  padding: 12px;
+  background: #f8fbff;
+}
+
+.enterpriseItem h3 {
+  margin: 0;
+  font-size: 15px;
+}
+
+.enterpriseHead {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  align-items: center;
+}
+
+.enterpriseItem p {
+  margin: 8px 0;
+  font-size: 14px;
+}
+
+.actionRow {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 6px;
+}
+
+.checkboxLabel {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.checkboxLabel input {
+  width: 16px;
+  height: 16px;
+}
+
+button.secondary {
+  background: #e2e8f0;
+  color: #0f172a;
+}
+
+button.warn {
+  background: #b45309;
+}
+
+button.okButton {
+  background: #15803d;
+}
+
 .errorText {
   margin: 2px 0 0;
   color: #b91c1c;
   font-size: 14px;
+}
+
+@media (max-width: 920px) {
+  .workspaceGrid {
+    grid-template-columns: 1fr;
+  }
 }

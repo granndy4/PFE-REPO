@@ -2,18 +2,15 @@ spring:
   application:
     name: fuel-voucher-backend
   datasource:
-    url: ${SPRING_DATASOURCE_URL:jdbc:h2:mem:fuel_voucher;MODE=PostgreSQL;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE}
-    username: ${SPRING_DATASOURCE_USERNAME:sa}
+    url: ${SPRING_DATASOURCE_URL:jdbc:mysql://localhost:3306/fuel_voucher?createDatabaseIfNotExist=true&useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Africa/Tunis}
+    username: ${SPRING_DATASOURCE_USERNAME:root}
     password: ${SPRING_DATASOURCE_PASSWORD:}
+    driver-class-name: com.mysql.cj.jdbc.Driver
   jpa:
     hibernate:
-      ddl-auto: update
+      ddl-auto: none
     show-sql: false
     open-in-view: false
-  h2:
-    console:
-      enabled: true
-      path: /h2-console
 
 server:
   port: 8080

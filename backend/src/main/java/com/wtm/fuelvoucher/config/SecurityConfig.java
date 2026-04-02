@@ -40,8 +40,10 @@ public class SecurityConfig {
                 .authenticationProvider(authenticationProvider)
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
                 .authorizeHttpRequests(auth -> auth
-                    .requestMatchers("/api/health", "/swagger-ui/**", "/v3/api-docs/**", "/h2-console/**").permitAll()
+                    .requestMatchers("/api/health", "/swagger-ui/**", "/v3/api-docs/**").permitAll()
                     .requestMatchers(HttpMethod.POST, "/api/auth/login", "/api/auth/register").permitAll()
+                    .requestMatchers("/api/entreprises/**").hasAnyRole("ADMIN", "MANAGER")
+                    .requestMatchers("/api/vehicules/**").hasAnyRole("ADMIN", "MANAGER")
                         .anyRequest().authenticated())
                 .headers(headers -> headers.frameOptions(frame -> frame.sameOrigin()))
                 .build();

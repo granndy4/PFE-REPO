@@ -1,6 +1,9 @@
 package com.wtm.fuelvoucher.auth;
 
 public enum Role {
-    USER,
-    ADMIN
+    ADMIN,
+    MANAGER,
+    AGENT,
+    ACCOUNTANT,
+    USER
 }
