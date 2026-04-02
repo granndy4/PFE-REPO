@@ -112,6 +112,87 @@ export type VehiculeQuery = {
   sort?: string
 }
 
+export type Employe = {
+  id: number
+  societeId: number
+  entrepriseId: number
+  codeEmploye: string
+  nomComplet: string
+  cin: string | null
+  telephone: string | null
+  email: string | null
+  poste: string | null
+  actif: boolean
+  creeLe: string
+  modifieLe: string
+}
+
+export type EmployePayload = {
+  societeId: number
+  entrepriseId: number
+  codeEmploye: string
+  nomComplet: string
+  cin?: string | null
+  telephone?: string | null
+  email?: string | null
+  poste?: string | null
+  actif?: boolean
+}
+
+export type EmployeQuery = {
+  societeId?: number
+  entrepriseId?: number
+  actif?: boolean
+  search?: string
+  page?: number
+  size?: number
+  sort?: string
+}
+
+export type ContratStatut = 'DRAFT' | 'ACTIVE' | 'SUSPENDED' | 'TERMINATED' | 'EXPIRED'
+
+export type Contrat = {
+  id: number
+  societeId: number
+  entrepriseId: number
+  numeroContrat: string
+  dateDebut: string
+  dateFin: string | null
+  codeDevise: string
+  delaiPaiementJours: number
+  montantMaxMensuel: number | null
+  statut: ContratStatut
+  signeLe: string | null
+  notes: string | null
+  creeParUtilisateurId: number | null
+  creeLe: string
+  modifieLe: string
+}
+
+export type ContratPayload = {
+  societeId: number
+  entrepriseId: number
+  numeroContrat: string
+  dateDebut: string
+  dateFin?: string | null
+  codeDevise?: string | null
+  delaiPaiementJours?: number | null
+  montantMaxMensuel?: number | null
+  statut?: ContratStatut
+  signeLe?: string | null
+  notes?: string | null
+}
+
+export type ContratQuery = {
+  societeId?: number
+  entrepriseId?: number
+  statut?: ContratStatut
+  search?: string
+  page?: number
+  size?: number
+  sort?: string
+}
+
 export type LoginRequest = {
   email: string
   password: string
@@ -325,6 +406,134 @@ export async function updateVehiculeActif(id: number, actif: boolean): Promise<V
   }
 
   return response.json() as Promise<Vehicule>
+}
+
+export async function fetchEmployes(query: EmployeQuery = {}): Promise<PageResponse<Employe>> {
+  const queryString = buildQueryString({
+    societeId: query.societeId,
+    entrepriseId: query.entrepriseId,
+    actif: query.actif,
+    search: query.search,
+    page: query.page,
+    size: query.size,
+    sort: query.sort,
+  })
+
+  const response = await fetch(`${API_BASE_URL}/api/employes${queryString}`, {
+    headers: buildHeaders(true),
+  })
+
+  if (!response.ok) {
+    throw new Error('Could not load employes')
+  }
+
+  return response.json() as Promise<PageResponse<Employe>>
+}
+
+export async function createEmploye(payload: EmployePayload): Promise<Employe> {
+  const response = await fetch(`${API_BASE_URL}/api/employes`, {
+    method: 'POST',
+    headers: buildHeaders(true),
+    body: JSON.stringify(payload),
+  })
+
+  if (!response.ok) {
+    throw new Error('Could not create employe')
+  }
+
+  return response.json() as Promise<Employe>
+}
+
+export async function updateEmploye(id: number, payload: EmployePayload): Promise<Employe> {
+  const response = await fetch(`${API_BASE_URL}/api/employes/${id}`, {
+    method: 'PUT',
+    headers: buildHeaders(true),
+    body: JSON.stringify(payload),
+  })
+
+  if (!response.ok) {
+    throw new Error('Could not update employe')
+  }
+
+  return response.json() as Promise<Employe>
+}
+
+export async function updateEmployeActif(id: number, actif: boolean): Promise<Employe> {
+  const response = await fetch(`${API_BASE_URL}/api/employes/${id}/actif`, {
+    method: 'PATCH',
+    headers: buildHeaders(true),
+    body: JSON.stringify({ actif }),
+  })
+
+  if (!response.ok) {
+    throw new Error('Could not update employe status')
+  }
+
+  return response.json() as Promise<Employe>
+}
+
+export async function fetchContrats(query: ContratQuery = {}): Promise<PageResponse<Contrat>> {
+  const queryString = buildQueryString({
+    societeId: query.societeId,
+    entrepriseId: query.entrepriseId,
+    statut: query.statut,
+    search: query.search,
+    page: query.page,
+    size: query.size,
+    sort: query.sort,
+  })
+
+  const response = await fetch(`${API_BASE_URL}/api/contrats${queryString}`, {
+    headers: buildHeaders(true),
+  })
+
+  if (!response.ok) {
+    throw new Error('Could not load contrats')
+  }
+
+  return response.json() as Promise<PageResponse<Contrat>>
+}
+
+export async function createContrat(payload: ContratPayload): Promise<Contrat> {
+  const response = await fetch(`${API_BASE_URL}/api/contrats`, {
+    method: 'POST',
+    headers: buildHeaders(true),
+    body: JSON.stringify(payload),
+  })
+
+  if (!response.ok) {
+    throw new Error('Could not create contrat')
+  }
+
+  return response.json() as Promise<Contrat>
+}
+
+export async function updateContrat(id: number, payload: ContratPayload): Promise<Contrat> {
+  const response = await fetch(`${API_BASE_URL}/api/contrats/${id}`, {
+    method: 'PUT',
+    headers: buildHeaders(true),
+    body: JSON.stringify(payload),
+  })
+
+  if (!response.ok) {
+    throw new Error('Could not update contrat')
+  }
+
+  return response.json() as Promise<Contrat>
+}
+
+export async function updateContratStatut(id: number, statut: ContratStatut): Promise<Contrat> {
+  const response = await fetch(`${API_BASE_URL}/api/contrats/${id}/statut`, {
+    method: 'PATCH',
+    headers: buildHeaders(true),
+    body: JSON.stringify({ statut }),
+  })
+
+  if (!response.ok) {
+    throw new Error('Could not update contrat status')
+  }
+
+  return response.json() as Promise<Contrat>
 }
 
 export function getStoredToken(): string | null {
