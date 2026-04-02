@@ -1,0 +1,36 @@
+spring:
+  application:
+    name: fuel-voucher-backend
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:h2:mem:fuel_voucher;MODE=PostgreSQL;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE}
+    username: ${SPRING_DATASOURCE_USERNAME:sa}
+    password: ${SPRING_DATASOURCE_PASSWORD:}
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: false
+    open-in-view: false
+  h2:
+    console:
+      enabled: true
+      path: /h2-console
+
+server:
+  port: 8080
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+
+app:
+  security:
+    jwt:
+      secret: ${APP_JWT_SECRET:MDEyMzQ1Njc4OTAxMjM0NTY3ODkwMTIzNDU2Nzg5MDE=}
+      expiration-ms: ${APP_JWT_EXPIRATION_MS:86400000}
+  bootstrap-admin:
+    enabled: ${APP_BOOTSTRAP_ADMIN_ENABLED:true}
+    name: ${APP_BOOTSTRAP_ADMIN_NAME:Admin}
+    email: ${APP_BOOTSTRAP_ADMIN_EMAIL:admin@wtm.local}
+    password: ${APP_BOOTSTRAP_ADMIN_PASSWORD:Admin@12345}
