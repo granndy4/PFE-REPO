@@ -46,6 +46,7 @@ public class SecurityConfig {
                     .requestMatchers("/api/employes/**").hasAnyRole("ADMIN", "MANAGER")
                     .requestMatchers("/api/contrats/**").hasAnyRole("ADMIN", "MANAGER")
                     .requestMatchers("/api/vehicules/**").hasAnyRole("ADMIN", "MANAGER")
+                    .requestMatchers("/api/bons/**").hasAnyRole("ADMIN", "MANAGER", "AGENT")
                         .anyRequest().authenticated())
                 .headers(headers -> headers.frameOptions(frame -> frame.sameOrigin()))
                 .build();

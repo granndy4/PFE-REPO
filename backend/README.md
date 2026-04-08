@@ -35,6 +35,14 @@ mvn spring-boot:run
 	- SPRING_DATASOURCE_USERNAME
 	- SPRING_DATASOURCE_PASSWORD
 
+## Migrations (Flyway)
+- Flyway dependency is configured and SQL scripts are in `src/main/resources/db/migration`.
+- Current script for voucher module:
+	- `V1__create_bons_tables.sql` (tables `bons_carburant` and `bons_consommation`).
+- Flyway is disabled by default to keep compatibility with local MySQL 5.5.
+- To enable migrations on a supported database version, start with:
+	- `APP_FLYWAY_ENABLED=true`
+
 ## API docs
 - Swagger UI: http://localhost:8080/swagger-ui/index.html
 - Health endpoint: http://localhost:8080/api/health

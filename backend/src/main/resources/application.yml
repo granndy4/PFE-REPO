@@ -11,6 +11,10 @@ spring:
       ddl-auto: none
     show-sql: false
     open-in-view: false
+  flyway:
+    enabled: ${APP_FLYWAY_ENABLED:false}
+    locations: classpath:db/migration
+    baseline-on-migrate: true
 
 server:
   port: 8080
