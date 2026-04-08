@@ -2,9 +2,9 @@ package com.wtm.fuelvoucher.config;
 
 import java.util.Locale;
 
-import com.wtm.fuelvoucher.auth.Role;
-import com.wtm.fuelvoucher.auth.UserAccount;
-import com.wtm.fuelvoucher.auth.UserAccountRepository;
+import com.wtm.fuelvoucher.Enums.Role;
+import com.wtm.fuelvoucher.Entities.UserAccount;
+import com.wtm.fuelvoucher.Repositories.UserAccountRepository;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
@@ -42,3 +42,7 @@ public class BootstrapAdminConfig {
         };
     }
 }
+
+
+
+

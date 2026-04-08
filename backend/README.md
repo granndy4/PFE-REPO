@@ -1,5 +1,20 @@
 # Backend - Fuel Voucher
 
+## Architecture (Layered by Code Type)
+The backend is organized by technical layer under `com.wtm.fuelvoucher`:
+
+- `Controllers/`: REST controllers (API entrypoints)
+- `Services/`: business logic and orchestration
+- `Repositories/`: Spring Data JPA repositories
+- `Entities/`: JPA entities
+- `Dtos/`: request/response DTOs
+- `Enums/`: shared domain enums (roles, contract/entreprise statuses, fuel types)
+
+Supporting packages kept by concern:
+
+- `config/`: Spring configuration classes
+- `security/`: JWT filter and security infrastructure
+
 ## Prerequisites
 - Java 17
 - Maven 3.9+
