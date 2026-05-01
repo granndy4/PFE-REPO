@@ -14,6 +14,8 @@ public interface VehiculeRepository extends JpaRepository<Vehicule, Long> {
 
     boolean existsBySocieteIdAndImmatriculationAndIdNot(Long societeId, String immatriculation, Long id);
 
+  long countByActif(boolean actif);
+
     @Query("""
             SELECT v
             FROM Vehicule v

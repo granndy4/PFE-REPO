@@ -11,6 +11,7 @@ import com.wtm.fuelvoucher.Repositories.VehiculeRepository;
 import com.wtm.fuelvoucher.Dtos.VehiculeRequest;
 import com.wtm.fuelvoucher.Dtos.VehiculeResponse;
 
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
@@ -116,6 +117,31 @@ public class VehiculeService {
                 Map.of("actif", ancienActif),
                 Map.of("actif", updated.isActif()));
         return toResponse(updated);
+    }
+
+    @Transactional
+    public void delete(Long id, String username) {
+        Vehicule vehicule = findByIdOrThrow(id);
+        Map<String, Object> anciennesValeurs = toAuditPayload(vehicule);
+
+        try {
+            vehiculeRepository.delete(vehicule);
+            vehiculeRepository.flush();
+        } catch (DataIntegrityViolationException ex) {
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT,
+                    "Cannot delete vehicule because it is referenced by other records");
+        }
+
+        auditJournalService.enregistrer(
+                "REFERENTIEL_VEHICULE",
+                "vehicules",
+                id,
+                "DELETE",
+                vehicule.getSocieteId(),
+                username,
+                anciennesValeurs,
+                null);
     }
 
     private Vehicule findByIdOrThrow(Long id) {

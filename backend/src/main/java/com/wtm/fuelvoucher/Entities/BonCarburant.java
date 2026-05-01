@@ -9,20 +9,11 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.PrePersist;
-import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
 
 @Entity
 @Table(name = "bons_carburant")
-public class BonCarburant {
-
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+public class BonCarburant extends BaseEntity {
 
     @Column(name = "societe_id", nullable = false)
     private Long societeId;
@@ -67,34 +58,12 @@ public class BonCarburant {
     @Column(name = "cree_par_utilisateur_id")
     private Long creeParUtilisateurId;
 
-    @Column(name = "cree_le", nullable = false)
-    private Instant creeLe;
-
-    @Column(name = "modifie_le", nullable = false)
-    private Instant modifieLe;
-
-    @PrePersist
-    void prePersist() {
-        Instant now = Instant.now();
-        if (creeLe == null) {
-            creeLe = now;
-        }
-        if (modifieLe == null) {
-            modifieLe = now;
-        }
-    }
-
-    @PreUpdate
-    void preUpdate() {
-        modifieLe = Instant.now();
-    }
-
     public Long getId() {
-        return id;
+        return super.getId();
     }
 
     public void setId(Long id) {
-        this.id = id;
+        super.setId(id);
     }
 
     public Long getSocieteId() {
@@ -210,18 +179,18 @@ public class BonCarburant {
     }
 
     public Instant getCreeLe() {
-        return creeLe;
+        return super.getCreeLe();
     }
 
     public void setCreeLe(Instant creeLe) {
-        this.creeLe = creeLe;
+        super.setCreeLe(creeLe);
     }
 
     public Instant getModifieLe() {
-        return modifieLe;
+        return super.getModifieLe();
     }
 
     public void setModifieLe(Instant modifieLe) {
-        this.modifieLe = modifieLe;
+        super.setModifieLe(modifieLe);
     }
 }

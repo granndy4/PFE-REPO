@@ -10,6 +10,7 @@ import com.wtm.fuelvoucher.Dtos.EntrepriseResponse;
 import com.wtm.fuelvoucher.Repositories.EntrepriseContracteeRepository;
 import com.wtm.fuelvoucher.Enums.EntrepriseStatut;
 
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
@@ -107,6 +108,31 @@ public class EntrepriseService {
             Map.of("statut", ancienStatut.name()),
             Map.of("statut", updated.getStatut().name()));
         return toResponse(updated);
+    }
+
+    @Transactional
+    public void delete(Long id, String username) {
+        EntrepriseContractee entreprise = findByIdOrThrow(id);
+        Map<String, Object> anciennesValeurs = toAuditPayload(entreprise);
+
+        try {
+            entrepriseContracteeRepository.delete(entreprise);
+            entrepriseContracteeRepository.flush();
+        } catch (DataIntegrityViolationException ex) {
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT,
+                    "Cannot delete entreprise because it is referenced by other records");
+        }
+
+        auditJournalService.enregistrer(
+                "REFERENTIEL_ENTREPRISE",
+                "entreprises_contractees",
+                id,
+                "DELETE",
+                entreprise.getSocieteId(),
+                username,
+                anciennesValeurs,
+                null);
     }
 
     private EntrepriseContractee findByIdOrThrow(Long id) {

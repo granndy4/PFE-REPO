@@ -13,6 +13,7 @@ import com.wtm.fuelvoucher.Repositories.ContratRepository;
 import com.wtm.fuelvoucher.Repositories.EntrepriseContracteeRepository;
 import com.wtm.fuelvoucher.Enums.ContratStatut;
 
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
@@ -124,6 +125,31 @@ public class ContratService {
                 Map.of("statut", ancienStatut.name()),
                 Map.of("statut", updated.getStatut().name()));
         return toResponse(updated);
+    }
+
+    @Transactional
+    public void delete(Long id, String username) {
+        Contrat contrat = findByIdOrThrow(id);
+        Map<String, Object> anciennesValeurs = toAuditPayload(contrat);
+
+        try {
+            contratRepository.delete(contrat);
+            contratRepository.flush();
+        } catch (DataIntegrityViolationException ex) {
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT,
+                    "Cannot delete contrat because it is referenced by other records");
+        }
+
+        auditJournalService.enregistrer(
+                "REFERENTIEL_CONTRAT",
+                "contrats",
+                id,
+                "DELETE",
+                contrat.getSocieteId(),
+                username,
+                anciennesValeurs,
+                null);
     }
 
     private Contrat findByIdOrThrow(Long id) {

@@ -10,10 +10,6 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
 
 import org.springframework.security.core.GrantedAuthority;
@@ -22,11 +18,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 
 @Entity
 @Table(name = "utilisateurs")
-public class UserAccount implements UserDetails {
-
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
+public class UserAccount extends BaseEntity implements UserDetails {
 
     @Column(name = "nom", nullable = false, length = 120)
     private String name;
@@ -44,22 +36,12 @@ public class UserAccount implements UserDetails {
     @Column(name = "actif", nullable = false)
     private boolean enabled = true;
 
-    @Column(name = "cree_le", nullable = false)
-    private Instant createdAt;
-
-    @PrePersist
-    void prePersist() {
-        if (createdAt == null) {
-            createdAt = Instant.now();
-        }
-    }
-
     public Long getId() {
-        return id;
+        return super.getId();
     }
 
     public void setId(Long id) {
-        this.id = id;
+        super.setId(id);
     }
 
     public String getName() {
@@ -130,11 +112,11 @@ public class UserAccount implements UserDetails {
     }
 
     public Instant getCreatedAt() {
-        return createdAt;
+        return getCreeLe();
     }
 
     public void setCreatedAt(Instant createdAt) {
-        this.createdAt = createdAt;
+        setCreeLe(createdAt);
     }
 }
 

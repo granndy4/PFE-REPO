@@ -3,6 +3,8 @@ package com.wtm.fuelvoucher.Repositories;
 import com.wtm.fuelvoucher.Entities.BonCarburant;
 import com.wtm.fuelvoucher.Enums.BonStatut;
 
+import java.time.Instant;
+import java.util.List;
 import java.util.Optional;
 
 import org.springframework.data.domain.Page;
@@ -16,6 +18,8 @@ public interface BonCarburantRepository extends JpaRepository<BonCarburant, Long
     boolean existsByReferenceBon(String referenceBon);
 
     Optional<BonCarburant> findByReferenceBon(String referenceBon);
+
+  long countByStatut(BonStatut statut);
 
     @Query("""
             SELECT b
@@ -37,4 +41,16 @@ public interface BonCarburantRepository extends JpaRepository<BonCarburant, Long
             @Param("statut") BonStatut statut,
             @Param("search") String search,
             Pageable pageable);
+
+        @Query("""
+          SELECT b
+          FROM BonCarburant b
+          WHERE (:societeId IS NULL OR b.societeId = :societeId)
+            AND b.creeLe >= :fromInclusive
+            AND b.creeLe < :toExclusive
+          """)
+        List<BonCarburant> listCreatedForDashboardTrends(
+          @Param("societeId") Long societeId,
+          @Param("fromInclusive") Instant fromInclusive,
+          @Param("toExclusive") Instant toExclusive);
 }

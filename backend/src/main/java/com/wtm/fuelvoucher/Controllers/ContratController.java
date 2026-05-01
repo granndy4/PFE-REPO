@@ -15,6 +15,7 @@ import org.springframework.data.web.PageableDefault;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -65,6 +66,13 @@ public class ContratController {
                                         @Valid @RequestBody ContratStatutRequest request,
                                         @AuthenticationPrincipal UserDetails principal) {
         return contratService.updateStatut(id, request.statut(), principal.getUsername());
+    }
+
+    @DeleteMapping("/{id}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    public void delete(@PathVariable Long id,
+                       @AuthenticationPrincipal UserDetails principal) {
+        contratService.delete(id, principal.getUsername());
     }
 }
 

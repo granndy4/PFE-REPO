@@ -38,6 +38,15 @@ import {
   type VehiculePayload,
   type VehiculeTypeCarburant,
 } from './api'
+import { AuthScreen } from './components/AuthScreen'
+import { DashboardHome } from './components/DashboardHome'
+import { ModulePanel } from './components/ModulePanel'
+import { ToastStack } from './components/ToastStack'
+import { UserSessionCard } from './components/UserSessionCard'
+import { ContratsSection } from './components/sections/ContratsSection'
+import { EmployesSection } from './components/sections/EmployesSection'
+import { EntreprisesSection } from './components/sections/EntreprisesSection'
+import { VehiculesSection } from './components/sections/VehiculesSection'
 
 type AuthMode = 'login' | 'register'
 type LoadState = 'idle' | 'loading' | 'success' | 'error'
@@ -49,6 +58,13 @@ type EntrepriseSortOption = 'creeLe,desc' | 'raisonSociale,asc' | 'codeEntrepris
 type ContratSortOption = 'creeLe,desc' | 'numeroContrat,asc' | 'dateDebut,desc'
 type EmployeSortOption = 'creeLe,desc' | 'nomComplet,asc' | 'codeEmploye,asc'
 type VehiculeSortOption = 'creeLe,desc' | 'immatriculation,asc' | 'marque,asc'
+type ReferentialModule = 'dashboard' | 'entreprises' | 'contrats' | 'employes' | 'vehicules'
+
+type ToastItem = {
+  id: number
+  type: 'success' | 'error'
+  message: string
+}
 
 const PAGE_SIZE = 10
 
@@ -354,6 +370,7 @@ function parseEmployeActifFilter(value: EmployeFilterActif): boolean | undefined
 
 export default function App() {
   const [authMode, setAuthMode] = useState<AuthMode>('login')
+  const [activeModule, setActiveModule] = useState<ReferentialModule>('dashboard')
   const [healthState, setHealthState] = useState<LoadState>('idle')
   const [health, setHealth] = useState<HealthResponse | null>(null)
   const [currentUser, setCurrentUser] = useState<MeResponse | null>(null)
@@ -362,6 +379,7 @@ export default function App() {
   const [password, setPassword] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [errorMessage, setErrorMessage] = useState('')
+  const [toasts, setToasts] = useState<ToastItem[]>([])
 
   const [entreprises, setEntreprises] = useState<Entreprise[]>([])
   const [entrepriseState, setEntrepriseState] = useState<LoadState>('idle')
@@ -455,6 +473,19 @@ export default function App() {
     return currentUser.role === 'ADMIN' || currentUser.role === 'MANAGER'
   }, [currentUser])
 
+  function dismissToast(id: number) {
+    setToasts((current) => current.filter((toast) => toast.id !== id))
+  }
+
+  function pushToast(type: 'success' | 'error', message: string) {
+    const id = Date.now() + Math.floor(Math.random() * 1000)
+    setToasts((current) => [...current, { id, type, message }])
+
+    window.setTimeout(() => {
+      dismissToast(id)
+    }, 3200)
+  }
+
   async function checkBackendHealth() {
     setHealthState('loading')
     try {
@@ -491,6 +522,7 @@ export default function App() {
       void loadEmployes(0)
       void loadVehicules(0)
     } else {
+      setActiveModule('dashboard')
       setEntreprises([])
       setEntrepriseTotal(0)
       setEntrepriseTotalPages(0)
@@ -512,6 +544,7 @@ export default function App() {
     setIsSubmitting(true)
 
     try {
+      const wasLogin = authMode === 'login'
       if (authMode === 'login') {
         const authResult = await login({ email, password })
         storeToken(authResult.token)
@@ -521,9 +554,12 @@ export default function App() {
       }
 
       await loadCurrentUser()
+      setActiveModule('dashboard')
       setPassword('')
+      pushToast('success', wasLogin ? 'Login successful' : 'Account created successfully')
     } catch (error) {
       setErrorMessage(error instanceof Error ? error.message : 'Authentication failed')
+      pushToast('error', error instanceof Error ? error.message : 'Authentication failed')
     } finally {
       setIsSubmitting(false)
     }
@@ -531,6 +567,7 @@ export default function App() {
 
   function handleLogout() {
     clearToken()
+    setActiveModule('dashboard')
     setCurrentUser(null)
     setEntreprises([])
     setEntrepriseTotal(0)
@@ -787,6 +824,7 @@ export default function App() {
     setIsEntrepriseSubmitting(true)
 
     try {
+      const isCreate = editingEntrepriseId === null
       const payload = toEntreprisePayload(entrepriseForm)
 
       if (editingEntrepriseId === null) {
@@ -797,8 +835,10 @@ export default function App() {
 
       await loadEntreprises(editingEntrepriseId === null ? 0 : entreprisePage)
       resetEntrepriseForm()
+      pushToast('success', isCreate ? 'Entreprise created' : 'Entreprise updated')
     } catch (error) {
       setEntrepriseFormError(error instanceof Error ? error.message : 'Could not save entreprise')
+      pushToast('error', error instanceof Error ? error.message : 'Could not save entreprise')
     } finally {
       setIsEntrepriseSubmitting(false)
     }
@@ -808,8 +848,10 @@ export default function App() {
     try {
       await updateEntrepriseStatut(id, statut)
       await loadEntreprises(entreprisePage)
+      pushToast('success', `Entreprise status set to ${statut}`)
     } catch (error) {
       setEntrepriseError(error instanceof Error ? error.message : 'Could not change entreprise status')
+      pushToast('error', error instanceof Error ? error.message : 'Could not change entreprise status')
     }
   }
 
@@ -819,6 +861,7 @@ export default function App() {
     setIsContratSubmitting(true)
 
     try {
+      const isCreate = editingContratId === null
       const payload = toContratPayload(contratForm)
 
       if (editingContratId === null) {
@@ -829,8 +872,10 @@ export default function App() {
 
       await loadContrats(editingContratId === null ? 0 : contratPage)
       resetContratForm()
+      pushToast('success', isCreate ? 'Contrat created' : 'Contrat updated')
     } catch (error) {
       setContratFormError(error instanceof Error ? error.message : 'Could not save contrat')
+      pushToast('error', error instanceof Error ? error.message : 'Could not save contrat')
     } finally {
       setIsContratSubmitting(false)
     }
@@ -840,8 +885,10 @@ export default function App() {
     try {
       await updateContratStatut(id, statut)
       await loadContrats(contratPage)
+      pushToast('success', `Contrat status set to ${statut}`)
     } catch (error) {
       setContratError(error instanceof Error ? error.message : 'Could not change contrat status')
+      pushToast('error', error instanceof Error ? error.message : 'Could not change contrat status')
     }
   }
 
@@ -851,6 +898,7 @@ export default function App() {
     setIsVehiculeSubmitting(true)
 
     try {
+      const isCreate = editingVehiculeId === null
       const payload = toVehiculePayload(vehiculeForm)
 
       if (editingVehiculeId === null) {
@@ -861,8 +909,10 @@ export default function App() {
 
       await loadVehicules(editingVehiculeId === null ? 0 : vehiculePage)
       resetVehiculeForm()
+      pushToast('success', isCreate ? 'Vehicule created' : 'Vehicule updated')
     } catch (error) {
       setVehiculeFormError(error instanceof Error ? error.message : 'Could not save vehicule')
+      pushToast('error', error instanceof Error ? error.message : 'Could not save vehicule')
     } finally {
       setIsVehiculeSubmitting(false)
     }
@@ -872,8 +922,10 @@ export default function App() {
     try {
       await updateVehiculeActif(id, actif)
       await loadVehicules(vehiculePage)
+      pushToast('success', `Vehicule ${actif ? 'activated' : 'deactivated'}`)
     } catch (error) {
       setVehiculeError(error instanceof Error ? error.message : 'Could not change vehicule status')
+      pushToast('error', error instanceof Error ? error.message : 'Could not change vehicule status')
     }
   }
 
@@ -883,6 +935,7 @@ export default function App() {
     setIsEmployeSubmitting(true)
 
     try {
+      const isCreate = editingEmployeId === null
       const payload = toEmployePayload(employeForm)
 
       if (editingEmployeId === null) {
@@ -893,8 +946,10 @@ export default function App() {
 
       await loadEmployes(editingEmployeId === null ? 0 : employePage)
       resetEmployeForm()
+      pushToast('success', isCreate ? 'Employe created' : 'Employe updated')
     } catch (error) {
       setEmployeFormError(error instanceof Error ? error.message : 'Could not save employe')
+      pushToast('error', error instanceof Error ? error.message : 'Could not save employe')
     } finally {
       setIsEmployeSubmitting(false)
     }
@@ -905,8 +960,10 @@ export default function App() {
       await updateEmployeActif(id, actif)
       await loadEmployes(employePage)
       await loadVehicules(vehiculePage)
+      pushToast('success', `Employe ${actif ? 'activated' : 'deactivated'}`)
     } catch (error) {
       setEmployeError(error instanceof Error ? error.message : 'Could not change employe status')
+      pushToast('error', error instanceof Error ? error.message : 'Could not change employe status')
     }
   }
 
@@ -929,1228 +986,185 @@ export default function App() {
 
         {currentUser ? (
           <>
-            <div className="status ok">
-              <p>Signed in as {currentUser.name}</p>
-              <p>Email: {currentUser.email}</p>
-              <p>Role: {currentUser.role}</p>
-              <button type="button" onClick={handleLogout}>Sign out</button>
-            </div>
+            <UserSessionCard
+              name={currentUser.name}
+              email={currentUser.email}
+              role={currentUser.role}
+              onSignOut={handleLogout}
+            />
+
+            {canManageReferential && (
+              <ModulePanel
+                activeModule={activeModule}
+                onChangeModule={setActiveModule}
+                totals={{
+                  entreprises: entrepriseTotal,
+                  contrats: contratTotal,
+                  employes: employeTotal,
+                  vehicules: vehiculeTotal,
+                }}
+              />
+            )}
+
+            {activeModule === 'dashboard' && (
+              <DashboardHome
+                userName={currentUser.name}
+                userRole={currentUser.role}
+                canManageReferential={canManageReferential}
+                totals={{
+                  entreprises: entrepriseTotal,
+                  contrats: contratTotal,
+                  employes: employeTotal,
+                  vehicules: vehiculeTotal,
+                }}
+                onOpenModule={setActiveModule}
+              />
+            )}
 
             {canManageReferential ? (
-              <section className="workspace">
-                <h2>Entreprises contractees</h2>
-                <p className="subtitle">Module referentiel: CRUD, pagination et tri.</p>
+              activeModule === 'entreprises' ? (
+                <EntreprisesSection
+                  societeFilter={societeFilter}
+                  setSocieteFilter={setSocieteFilter}
+                  searchFilter={searchFilter}
+                  setSearchFilter={setSearchFilter}
+                  statutFilter={statutFilter}
+                  setStatutFilter={setStatutFilter}
+                  entrepriseSort={entrepriseSort}
+                  setEntrepriseSort={setEntrepriseSort}
+                  entrepriseState={entrepriseState}
+                  entrepriseTotal={entrepriseTotal}
+                  entrepriseError={entrepriseError}
+                  entreprisePage={entreprisePage}
+                  entrepriseTotalPages={entrepriseTotalPages}
+                  entreprises={entreprises}
+                  loadEntreprises={loadEntreprises}
+                  entrepriseForm={entrepriseForm}
+                  setEntrepriseForm={setEntrepriseForm}
+                  handleEntrepriseSubmit={handleEntrepriseSubmit}
+                  editingEntrepriseId={editingEntrepriseId}
+                  isEntrepriseSubmitting={isEntrepriseSubmitting}
+                  resetEntrepriseForm={resetEntrepriseForm}
+                  entrepriseFormError={entrepriseFormError}
+                  startEditEntreprise={startEditEntreprise}
+                  handleEntrepriseStatut={handleEntrepriseStatut}
+                />
+              ) : null
+            ) : null}
 
-                <div className="filterRow">
-                  <label>
-                    Societe ID
-                    <input
-                      value={societeFilter}
-                      onChange={(event) => setSocieteFilter(event.target.value)}
-                      placeholder="1"
-                    />
-                  </label>
-
-                  <label>
-                    Search
-                    <input
-                      value={searchFilter}
-                      onChange={(event) => setSearchFilter(event.target.value)}
-                      placeholder="Code or raison sociale"
-                    />
-                  </label>
-
-                  <label>
-                    Statut
-                    <select
-                      value={statutFilter}
-                      onChange={(event) => setStatutFilter(event.target.value as EntrepriseFilterStatut)}
-                    >
-                      <option value="ALL">ALL</option>
-                      <option value="ACTIVE">ACTIVE</option>
-                      <option value="SUSPENDED">SUSPENDED</option>
-                      <option value="CLOSED">CLOSED</option>
-                    </select>
-                  </label>
-
-                  <label>
-                    Sort
-                    <select
-                      value={entrepriseSort}
-                      onChange={(event) => setEntrepriseSort(event.target.value as EntrepriseSortOption)}
-                    >
-                      <option value="creeLe,desc">Newest</option>
-                      <option value="raisonSociale,asc">Raison sociale A-Z</option>
-                      <option value="codeEntreprise,asc">Code A-Z</option>
-                    </select>
-                  </label>
-
-                  <button
-                    type="button"
-                    onClick={() => void loadEntreprises(0)}
-                    disabled={entrepriseState === 'loading'}
-                  >
-                    {entrepriseState === 'loading' ? 'Loading...' : 'Refresh'}
-                  </button>
-                </div>
-
-                <p className="resultText">{entrepriseTotal} entreprise(s)</p>
-                {entrepriseError && <p className="errorText">{entrepriseError}</p>}
-                <div className="paginationRow">
-                  <button
-                    type="button"
-                    className="secondary"
-                    onClick={() => void loadEntreprises(Math.max(entreprisePage - 1, 0))}
-                    disabled={entreprisePage <= 0 || entrepriseState === 'loading'}
-                  >
-                    Previous page
-                  </button>
-                  <span>
-                    Page {entrepriseTotalPages === 0 ? 0 : entreprisePage + 1} / {Math.max(entrepriseTotalPages, 1)}
-                  </span>
-                  <button
-                    type="button"
-                    className="secondary"
-                    onClick={() => void loadEntreprises(entreprisePage + 1)}
-                    disabled={entreprisePage + 1 >= entrepriseTotalPages || entrepriseState === 'loading'}
-                  >
-                    Next page
-                  </button>
-                </div>
-
-                <div className="workspaceGrid">
-                  <form className="form" onSubmit={handleEntrepriseSubmit}>
-                    <h3>{editingEntrepriseId === null ? 'Create entreprise' : 'Edit entreprise'}</h3>
-
-                    <label>
-                      Societe ID
-                      <input
-                        value={entrepriseForm.societeId}
-                        onChange={(event) => setEntrepriseForm((current) => ({
-                          ...current,
-                          societeId: event.target.value,
-                        }))}
-                        required
-                      />
-                    </label>
-
-                    <label>
-                      Code entreprise
-                      <input
-                        value={entrepriseForm.codeEntreprise}
-                        onChange={(event) => setEntrepriseForm((current) => ({
-                          ...current,
-                          codeEntreprise: event.target.value,
-                        }))}
-                        required
-                        maxLength={50}
-                      />
-                    </label>
-
-                    <label>
-                      Raison sociale
-                      <input
-                        value={entrepriseForm.raisonSociale}
-                        onChange={(event) => setEntrepriseForm((current) => ({
-                          ...current,
-                          raisonSociale: event.target.value,
-                        }))}
-                        required
-                        maxLength={200}
-                      />
-                    </label>
-
-                    <label>
-                      Nom court
-                      <input
-                        value={entrepriseForm.nomCourt}
-                        onChange={(event) => setEntrepriseForm((current) => ({
-                          ...current,
-                          nomCourt: event.target.value,
-                        }))}
-                        maxLength={120}
-                      />
-                    </label>
-
-                    <label>
-                      Matricule fiscal
-                      <input
-                        value={entrepriseForm.matriculeFiscal}
-                        onChange={(event) => setEntrepriseForm((current) => ({
-                          ...current,
-                          matriculeFiscal: event.target.value,
-                        }))}
-                        maxLength={80}
-                      />
-                    </label>
-
-                    <label>
-                      Adresse facturation
-                      <textarea
-                        value={entrepriseForm.adresseFacturation}
-                        onChange={(event) => setEntrepriseForm((current) => ({
-                          ...current,
-                          adresseFacturation: event.target.value,
-                        }))}
-                        rows={3}
-                      />
-                    </label>
-
-                    <label>
-                      Nom contact
-                      <input
-                        value={entrepriseForm.nomContact}
-                        onChange={(event) => setEntrepriseForm((current) => ({
-                          ...current,
-                          nomContact: event.target.value,
-                        }))}
-                        maxLength={120}
-                      />
-                    </label>
-
-                    <label>
-                      Email contact
-                      <input
-                        type="email"
-                        value={entrepriseForm.emailContact}
-                        onChange={(event) => setEntrepriseForm((current) => ({
-                          ...current,
-                          emailContact: event.target.value,
-                        }))}
-                        maxLength={160}
-                      />
-                    </label>
-
-                    <label>
-                      Telephone contact
-                      <input
-                        value={entrepriseForm.telephoneContact}
-                        onChange={(event) => setEntrepriseForm((current) => ({
-                          ...current,
-                          telephoneContact: event.target.value,
-                        }))}
-                        maxLength={40}
-                      />
-                    </label>
-
-                    <label>
-                      Statut
-                      <select
-                        value={entrepriseForm.statut}
-                        onChange={(event) => setEntrepriseForm((current) => ({
-                          ...current,
-                          statut: event.target.value as EntrepriseStatut,
-                        }))}
-                      >
-                        <option value="ACTIVE">ACTIVE</option>
-                        <option value="SUSPENDED">SUSPENDED</option>
-                        <option value="CLOSED">CLOSED</option>
-                      </select>
-                    </label>
-
-                    <div className="actionRow">
-                      <button type="submit" disabled={isEntrepriseSubmitting}>
-                        {isEntrepriseSubmitting
-                          ? 'Saving...'
-                          : editingEntrepriseId === null
-                            ? 'Create entreprise'
-                            : 'Save changes'}
-                      </button>
-
-                      {editingEntrepriseId !== null && (
-                        <button type="button" className="secondary" onClick={resetEntrepriseForm}>
-                          Cancel edit
-                        </button>
-                      )}
-                    </div>
-
-                    {entrepriseFormError && <p className="errorText">{entrepriseFormError}</p>}
-                  </form>
-
-                  <div className="enterpriseList">
-                    {entreprises.length === 0 ? (
-                      <p className="subtitle">No entreprise found for current filters.</p>
-                    ) : (
-                      entreprises.map((entreprise) => (
-                        <article key={entreprise.id} className="enterpriseItem">
-                          <div className="enterpriseHead">
-                            <h3>{entreprise.codeEntreprise} - {entreprise.raisonSociale}</h3>
-                            <span className={`badge ${entreprise.statut === 'ACTIVE' ? 'ok' : 'error'}`}>
-                              {entreprise.statut}
-                            </span>
-                          </div>
-
-                          <p>Societe ID: {entreprise.societeId}</p>
-                          <p>Contact: {entreprise.nomContact || 'N/A'} ({entreprise.emailContact || 'N/A'})</p>
-
-                          <div className="actionRow">
-                            <button type="button" className="secondary" onClick={() => startEditEntreprise(entreprise)}>
-                              Edit
-                            </button>
-                            <button
-                              type="button"
-                              className="warn"
-                              onClick={() => void handleEntrepriseStatut(entreprise.id, 'SUSPENDED')}
-                              disabled={entreprise.statut === 'SUSPENDED'}
-                            >
-                              Suspend
-                            </button>
-                            <button
-                              type="button"
-                              className="okButton"
-                              onClick={() => void handleEntrepriseStatut(entreprise.id, 'ACTIVE')}
-                              disabled={entreprise.statut === 'ACTIVE'}
-                            >
-                              Activate
-                            </button>
-                          </div>
-                        </article>
-                      ))
-                    )}
-                  </div>
-                </div>
-              </section>
-            ) : (
-              <div className="status">
-                <p>Your current role can use authentication endpoints.</p>
-                <p>Entreprise, employe, contrat and vehicule management is available for ADMIN and MANAGER.</p>
-              </div>
+            {canManageReferential && activeModule === 'employes' && (
+              <EmployesSection
+                employeSocieteFilter={employeSocieteFilter}
+                setEmployeSocieteFilter={setEmployeSocieteFilter}
+                employeEntrepriseFilter={employeEntrepriseFilter}
+                setEmployeEntrepriseFilter={setEmployeEntrepriseFilter}
+                employeSearchFilter={employeSearchFilter}
+                setEmployeSearchFilter={setEmployeSearchFilter}
+                employeActifFilter={employeActifFilter}
+                setEmployeActifFilter={setEmployeActifFilter}
+                employeSort={employeSort}
+                setEmployeSort={setEmployeSort}
+                employeState={employeState}
+                employeTotal={employeTotal}
+                employeError={employeError}
+                employePage={employePage}
+                employeTotalPages={employeTotalPages}
+                employes={employes}
+                loadEmployes={loadEmployes}
+                employeForm={employeForm}
+                setEmployeForm={setEmployeForm}
+                handleEmployeSubmit={handleEmployeSubmit}
+                editingEmployeId={editingEmployeId}
+                isEmployeSubmitting={isEmployeSubmitting}
+                resetEmployeForm={resetEmployeForm}
+                employeFormError={employeFormError}
+                startEditEmploye={startEditEmploye}
+                handleEmployeActif={handleEmployeActif}
+              />
             )}
 
-            {canManageReferential && (
-              <section className="workspace">
-                <h2>Employes entreprise</h2>
-                <p className="subtitle">CRUD employes relies on entreprises_contractees and writes audit entries.</p>
-
-                <div className="filterRow">
-                  <label>
-                    Societe ID
-                    <input
-                      value={employeSocieteFilter}
-                      onChange={(event) => setEmployeSocieteFilter(event.target.value)}
-                      placeholder="1"
-                    />
-                  </label>
-
-                  <label>
-                    Entreprise ID
-                    <input
-                      value={employeEntrepriseFilter}
-                      onChange={(event) => setEmployeEntrepriseFilter(event.target.value)}
-                      placeholder="Optional"
-                    />
-                  </label>
-
-                  <label>
-                    Search
-                    <input
-                      value={employeSearchFilter}
-                      onChange={(event) => setEmployeSearchFilter(event.target.value)}
-                      placeholder="Code or nom"
-                    />
-                  </label>
-
-                  <label>
-                    Actif
-                    <select
-                      value={employeActifFilter}
-                      onChange={(event) => setEmployeActifFilter(event.target.value as EmployeFilterActif)}
-                    >
-                      <option value="ALL">ALL</option>
-                      <option value="ACTIVE">ACTIVE</option>
-                      <option value="INACTIVE">INACTIVE</option>
-                    </select>
-                  </label>
-
-                  <label>
-                    Sort
-                    <select
-                      value={employeSort}
-                      onChange={(event) => setEmployeSort(event.target.value as EmployeSortOption)}
-                    >
-                      <option value="creeLe,desc">Newest</option>
-                      <option value="nomComplet,asc">Nom complet A-Z</option>
-                      <option value="codeEmploye,asc">Code A-Z</option>
-                    </select>
-                  </label>
-
-                  <button
-                    type="button"
-                    onClick={() => void loadEmployes(0)}
-                    disabled={employeState === 'loading'}
-                  >
-                    {employeState === 'loading' ? 'Loading...' : 'Refresh'}
-                  </button>
-                </div>
-
-                <p className="resultText">{employeTotal} employe(s)</p>
-                {employeError && <p className="errorText">{employeError}</p>}
-                <div className="paginationRow">
-                  <button
-                    type="button"
-                    className="secondary"
-                    onClick={() => void loadEmployes(Math.max(employePage - 1, 0))}
-                    disabled={employePage <= 0 || employeState === 'loading'}
-                  >
-                    Previous page
-                  </button>
-                  <span>
-                    Page {employeTotalPages === 0 ? 0 : employePage + 1} / {Math.max(employeTotalPages, 1)}
-                  </span>
-                  <button
-                    type="button"
-                    className="secondary"
-                    onClick={() => void loadEmployes(employePage + 1)}
-                    disabled={employePage + 1 >= employeTotalPages || employeState === 'loading'}
-                  >
-                    Next page
-                  </button>
-                </div>
-
-                <div className="workspaceGrid">
-                  <form className="form" onSubmit={handleEmployeSubmit}>
-                    <h3>{editingEmployeId === null ? 'Create employe' : 'Edit employe'}</h3>
-
-                    <label>
-                      Societe ID
-                      <input
-                        value={employeForm.societeId}
-                        onChange={(event) => setEmployeForm((current) => ({
-                          ...current,
-                          societeId: event.target.value,
-                        }))}
-                        required
-                      />
-                    </label>
-
-                    <label>
-                      Entreprise ID
-                      <input
-                        value={employeForm.entrepriseId}
-                        onChange={(event) => setEmployeForm((current) => ({
-                          ...current,
-                          entrepriseId: event.target.value,
-                        }))}
-                        required
-                      />
-                    </label>
-
-                    <label>
-                      Code employe
-                      <input
-                        value={employeForm.codeEmploye}
-                        onChange={(event) => setEmployeForm((current) => ({
-                          ...current,
-                          codeEmploye: event.target.value,
-                        }))}
-                        required
-                        maxLength={50}
-                      />
-                    </label>
-
-                    <label>
-                      Nom complet
-                      <input
-                        value={employeForm.nomComplet}
-                        onChange={(event) => setEmployeForm((current) => ({
-                          ...current,
-                          nomComplet: event.target.value,
-                        }))}
-                        required
-                        maxLength={140}
-                      />
-                    </label>
-
-                    <label>
-                      CIN
-                      <input
-                        value={employeForm.cin}
-                        onChange={(event) => setEmployeForm((current) => ({
-                          ...current,
-                          cin: event.target.value,
-                        }))}
-                        maxLength={40}
-                      />
-                    </label>
-
-                    <label>
-                      Telephone
-                      <input
-                        value={employeForm.telephone}
-                        onChange={(event) => setEmployeForm((current) => ({
-                          ...current,
-                          telephone: event.target.value,
-                        }))}
-                        maxLength={40}
-                      />
-                    </label>
-
-                    <label>
-                      Email
-                      <input
-                        type="email"
-                        value={employeForm.email}
-                        onChange={(event) => setEmployeForm((current) => ({
-                          ...current,
-                          email: event.target.value,
-                        }))}
-                        maxLength={160}
-                      />
-                    </label>
-
-                    <label>
-                      Poste
-                      <input
-                        value={employeForm.poste}
-                        onChange={(event) => setEmployeForm((current) => ({
-                          ...current,
-                          poste: event.target.value,
-                        }))}
-                        maxLength={100}
-                      />
-                    </label>
-
-                    <label className="checkboxLabel">
-                      <input
-                        type="checkbox"
-                        checked={employeForm.actif}
-                        onChange={(event) => setEmployeForm((current) => ({
-                          ...current,
-                          actif: event.target.checked,
-                        }))}
-                      />
-                      Actif
-                    </label>
-
-                    <div className="actionRow">
-                      <button type="submit" disabled={isEmployeSubmitting}>
-                        {isEmployeSubmitting
-                          ? 'Saving...'
-                          : editingEmployeId === null
-                            ? 'Create employe'
-                            : 'Save changes'}
-                      </button>
-
-                      {editingEmployeId !== null && (
-                        <button type="button" className="secondary" onClick={resetEmployeForm}>
-                          Cancel edit
-                        </button>
-                      )}
-                    </div>
-
-                    {employeFormError && <p className="errorText">{employeFormError}</p>}
-                  </form>
-
-                  <div className="enterpriseList">
-                    {employes.length === 0 ? (
-                      <p className="subtitle">No employe found for current filters.</p>
-                    ) : (
-                      employes.map((employe) => (
-                        <article key={employe.id} className="enterpriseItem">
-                          <div className="enterpriseHead">
-                            <h3>{employe.codeEmploye} - {employe.nomComplet}</h3>
-                            <span className={`badge ${employe.actif ? 'ok' : 'error'}`}>
-                              {employe.actif ? 'ACTIVE' : 'INACTIVE'}
-                            </span>
-                          </div>
-
-                          <p>Societe ID: {employe.societeId} | Entreprise ID: {employe.entrepriseId}</p>
-                          <p>Contact: {employe.telephone || 'N/A'} | {employe.email || 'N/A'}</p>
-                          <p>Poste: {employe.poste || 'N/A'} | CIN: {employe.cin || 'N/A'}</p>
-
-                          <div className="actionRow">
-                            <button type="button" className="secondary" onClick={() => startEditEmploye(employe)}>
-                              Edit
-                            </button>
-                            <button
-                              type="button"
-                              className="warn"
-                              onClick={() => void handleEmployeActif(employe.id, false)}
-                              disabled={!employe.actif}
-                            >
-                              Deactivate
-                            </button>
-                            <button
-                              type="button"
-                              className="okButton"
-                              onClick={() => void handleEmployeActif(employe.id, true)}
-                              disabled={employe.actif}
-                            >
-                              Activate
-                            </button>
-                          </div>
-                        </article>
-                      ))
-                    )}
-                  </div>
-                </div>
-              </section>
+            {canManageReferential && activeModule === 'contrats' && (
+              <ContratsSection
+                contratSocieteFilter={contratSocieteFilter}
+                setContratSocieteFilter={setContratSocieteFilter}
+                contratEntrepriseFilter={contratEntrepriseFilter}
+                setContratEntrepriseFilter={setContratEntrepriseFilter}
+                contratSearchFilter={contratSearchFilter}
+                setContratSearchFilter={setContratSearchFilter}
+                contratStatutFilter={contratStatutFilter}
+                setContratStatutFilter={setContratStatutFilter}
+                contratSort={contratSort}
+                setContratSort={setContratSort}
+                contratState={contratState}
+                contratTotal={contratTotal}
+                contratError={contratError}
+                contratPage={contratPage}
+                contratTotalPages={contratTotalPages}
+                contrats={contrats}
+                loadContrats={loadContrats}
+                contratForm={contratForm}
+                setContratForm={setContratForm}
+                handleContratSubmit={handleContratSubmit}
+                editingContratId={editingContratId}
+                isContratSubmitting={isContratSubmitting}
+                resetContratForm={resetContratForm}
+                contratFormError={contratFormError}
+                startEditContrat={startEditContrat}
+                handleContratStatut={handleContratStatut}
+              />
             )}
 
-            {canManageReferential && (
-              <section className="workspace">
-                <h2>Contrats client</h2>
-                <p className="subtitle">CRUD contrats client with referential consistency and persistent audit.</p>
-
-                <div className="filterRow">
-                  <label>
-                    Societe ID
-                    <input
-                      value={contratSocieteFilter}
-                      onChange={(event) => setContratSocieteFilter(event.target.value)}
-                      placeholder="1"
-                    />
-                  </label>
-
-                  <label>
-                    Entreprise ID
-                    <input
-                      value={contratEntrepriseFilter}
-                      onChange={(event) => setContratEntrepriseFilter(event.target.value)}
-                      placeholder="Optional"
-                    />
-                  </label>
-
-                  <label>
-                    Search
-                    <input
-                      value={contratSearchFilter}
-                      onChange={(event) => setContratSearchFilter(event.target.value)}
-                      placeholder="Numero contrat or notes"
-                    />
-                  </label>
-
-                  <label>
-                    Statut
-                    <select
-                      value={contratStatutFilter}
-                      onChange={(event) => setContratStatutFilter(event.target.value as ContratFilterStatut)}
-                    >
-                      <option value="ALL">ALL</option>
-                      <option value="DRAFT">DRAFT</option>
-                      <option value="ACTIVE">ACTIVE</option>
-                      <option value="SUSPENDED">SUSPENDED</option>
-                      <option value="TERMINATED">TERMINATED</option>
-                      <option value="EXPIRED">EXPIRED</option>
-                    </select>
-                  </label>
-
-                  <label>
-                    Sort
-                    <select
-                      value={contratSort}
-                      onChange={(event) => setContratSort(event.target.value as ContratSortOption)}
-                    >
-                      <option value="creeLe,desc">Newest</option>
-                      <option value="numeroContrat,asc">Numero contrat A-Z</option>
-                      <option value="dateDebut,desc">Date debut recent first</option>
-                    </select>
-                  </label>
-
-                  <button
-                    type="button"
-                    onClick={() => void loadContrats(0)}
-                    disabled={contratState === 'loading'}
-                  >
-                    {contratState === 'loading' ? 'Loading...' : 'Refresh'}
-                  </button>
-                </div>
-
-                <p className="resultText">{contratTotal} contrat(s)</p>
-                {contratError && <p className="errorText">{contratError}</p>}
-                <div className="paginationRow">
-                  <button
-                    type="button"
-                    className="secondary"
-                    onClick={() => void loadContrats(Math.max(contratPage - 1, 0))}
-                    disabled={contratPage <= 0 || contratState === 'loading'}
-                  >
-                    Previous page
-                  </button>
-                  <span>
-                    Page {contratTotalPages === 0 ? 0 : contratPage + 1} / {Math.max(contratTotalPages, 1)}
-                  </span>
-                  <button
-                    type="button"
-                    className="secondary"
-                    onClick={() => void loadContrats(contratPage + 1)}
-                    disabled={contratPage + 1 >= contratTotalPages || contratState === 'loading'}
-                  >
-                    Next page
-                  </button>
-                </div>
-
-                <div className="workspaceGrid">
-                  <form className="form" onSubmit={handleContratSubmit}>
-                    <h3>{editingContratId === null ? 'Create contrat' : 'Edit contrat'}</h3>
-
-                    <label>
-                      Societe ID
-                      <input
-                        value={contratForm.societeId}
-                        onChange={(event) => setContratForm((current) => ({
-                          ...current,
-                          societeId: event.target.value,
-                        }))}
-                        required
-                      />
-                    </label>
-
-                    <label>
-                      Entreprise ID
-                      <input
-                        value={contratForm.entrepriseId}
-                        onChange={(event) => setContratForm((current) => ({
-                          ...current,
-                          entrepriseId: event.target.value,
-                        }))}
-                        required
-                      />
-                    </label>
-
-                    <label>
-                      Numero contrat
-                      <input
-                        value={contratForm.numeroContrat}
-                        onChange={(event) => setContratForm((current) => ({
-                          ...current,
-                          numeroContrat: event.target.value,
-                        }))}
-                        required
-                        maxLength={60}
-                      />
-                    </label>
-
-                    <label>
-                      Date debut
-                      <input
-                        type="date"
-                        value={contratForm.dateDebut}
-                        onChange={(event) => setContratForm((current) => ({
-                          ...current,
-                          dateDebut: event.target.value,
-                        }))}
-                        required
-                      />
-                    </label>
-
-                    <label>
-                      Date fin
-                      <input
-                        type="date"
-                        value={contratForm.dateFin}
-                        onChange={(event) => setContratForm((current) => ({
-                          ...current,
-                          dateFin: event.target.value,
-                        }))}
-                      />
-                    </label>
-
-                    <label>
-                      Code devise
-                      <input
-                        value={contratForm.codeDevise}
-                        onChange={(event) => setContratForm((current) => ({
-                          ...current,
-                          codeDevise: event.target.value.toUpperCase(),
-                        }))}
-                        maxLength={3}
-                      />
-                    </label>
-
-                    <label>
-                      Delai paiement (jours)
-                      <input
-                        value={contratForm.delaiPaiementJours}
-                        onChange={(event) => setContratForm((current) => ({
-                          ...current,
-                          delaiPaiementJours: event.target.value,
-                        }))}
-                      />
-                    </label>
-
-                    <label>
-                      Montant max mensuel
-                      <input
-                        value={contratForm.montantMaxMensuel}
-                        onChange={(event) => setContratForm((current) => ({
-                          ...current,
-                          montantMaxMensuel: event.target.value,
-                        }))}
-                        placeholder="Ex: 15000"
-                      />
-                    </label>
-
-                    <label>
-                      Statut
-                      <select
-                        value={contratForm.statut}
-                        onChange={(event) => setContratForm((current) => ({
-                          ...current,
-                          statut: event.target.value as ContratStatut,
-                        }))}
-                      >
-                        <option value="DRAFT">DRAFT</option>
-                        <option value="ACTIVE">ACTIVE</option>
-                        <option value="SUSPENDED">SUSPENDED</option>
-                        <option value="TERMINATED">TERMINATED</option>
-                        <option value="EXPIRED">EXPIRED</option>
-                      </select>
-                    </label>
-
-                    <label>
-                      Signe le
-                      <input
-                        type="date"
-                        value={contratForm.signeLe}
-                        onChange={(event) => setContratForm((current) => ({
-                          ...current,
-                          signeLe: event.target.value,
-                        }))}
-                      />
-                    </label>
-
-                    <label>
-                      Notes
-                      <textarea
-                        value={contratForm.notes}
-                        onChange={(event) => setContratForm((current) => ({
-                          ...current,
-                          notes: event.target.value,
-                        }))}
-                        rows={3}
-                      />
-                    </label>
-
-                    <div className="actionRow">
-                      <button type="submit" disabled={isContratSubmitting}>
-                        {isContratSubmitting
-                          ? 'Saving...'
-                          : editingContratId === null
-                            ? 'Create contrat'
-                            : 'Save changes'}
-                      </button>
-
-                      {editingContratId !== null && (
-                        <button type="button" className="secondary" onClick={resetContratForm}>
-                          Cancel edit
-                        </button>
-                      )}
-                    </div>
-
-                    {contratFormError && <p className="errorText">{contratFormError}</p>}
-                  </form>
-
-                  <div className="enterpriseList">
-                    {contrats.length === 0 ? (
-                      <p className="subtitle">No contrat found for current filters.</p>
-                    ) : (
-                      contrats.map((contrat) => (
-                        <article key={contrat.id} className="enterpriseItem">
-                          <div className="enterpriseHead">
-                            <h3>{contrat.numeroContrat}</h3>
-                            <span className={`badge ${contrat.statut === 'ACTIVE' ? 'ok' : 'error'}`}>
-                              {contrat.statut}
-                            </span>
-                          </div>
-
-                          <p>Societe ID: {contrat.societeId} | Entreprise ID: {contrat.entrepriseId}</p>
-                          <p>Periode: {contrat.dateDebut} - {contrat.dateFin || 'Open'}</p>
-                          <p>Paiement: {contrat.delaiPaiementJours} j | Max mensuel: {contrat.montantMaxMensuel ?? 'N/A'} {contrat.codeDevise}</p>
-
-                          <div className="actionRow">
-                            <button type="button" className="secondary" onClick={() => startEditContrat(contrat)}>
-                              Edit
-                            </button>
-                            <button
-                              type="button"
-                              className="warn"
-                              onClick={() => void handleContratStatut(contrat.id, 'SUSPENDED')}
-                              disabled={contrat.statut === 'SUSPENDED'}
-                            >
-                              Suspend
-                            </button>
-                            <button
-                              type="button"
-                              className="okButton"
-                              onClick={() => void handleContratStatut(contrat.id, 'ACTIVE')}
-                              disabled={contrat.statut === 'ACTIVE'}
-                            >
-                              Activate
-                            </button>
-                            <button
-                              type="button"
-                              className="secondary"
-                              onClick={() => void handleContratStatut(contrat.id, 'TERMINATED')}
-                              disabled={contrat.statut === 'TERMINATED'}
-                            >
-                              Terminate
-                            </button>
-                          </div>
-                        </article>
-                      ))
-                    )}
-                  </div>
-                </div>
-              </section>
-            )}
-
-            {canManageReferential && (
-              <section className="workspace">
-                <h2>Vehicules</h2>
-                <p className="subtitle">CRUD vehicules relies on entreprises_contractees and writes audit entries.</p>
-
-                <div className="filterRow">
-                  <label>
-                    Societe ID
-                    <input
-                      value={vehiculeSocieteFilter}
-                      onChange={(event) => setVehiculeSocieteFilter(event.target.value)}
-                      placeholder="1"
-                    />
-                  </label>
-
-                  <label>
-                    Entreprise ID
-                    <input
-                      value={vehiculeEntrepriseFilter}
-                      onChange={(event) => setVehiculeEntrepriseFilter(event.target.value)}
-                      placeholder="Optional"
-                    />
-                  </label>
-
-                  <label>
-                    Search
-                    <input
-                      value={vehiculeSearchFilter}
-                      onChange={(event) => setVehiculeSearchFilter(event.target.value)}
-                      placeholder="Immatriculation or marque"
-                    />
-                  </label>
-
-                  <label>
-                    Actif
-                    <select
-                      value={vehiculeActifFilter}
-                      onChange={(event) => setVehiculeActifFilter(event.target.value as VehiculeFilterActif)}
-                    >
-                      <option value="ALL">ALL</option>
-                      <option value="ACTIVE">ACTIVE</option>
-                      <option value="INACTIVE">INACTIVE</option>
-                    </select>
-                  </label>
-
-                  <label>
-                    Sort
-                    <select
-                      value={vehiculeSort}
-                      onChange={(event) => setVehiculeSort(event.target.value as VehiculeSortOption)}
-                    >
-                      <option value="creeLe,desc">Newest</option>
-                      <option value="immatriculation,asc">Immatriculation A-Z</option>
-                      <option value="marque,asc">Marque A-Z</option>
-                    </select>
-                  </label>
-
-                  <button
-                    type="button"
-                    onClick={() => void loadVehicules(0)}
-                    disabled={vehiculeState === 'loading'}
-                  >
-                    {vehiculeState === 'loading' ? 'Loading...' : 'Refresh'}
-                  </button>
-                </div>
-
-                <p className="resultText">{vehiculeTotal} vehicule(s)</p>
-                {vehiculeError && <p className="errorText">{vehiculeError}</p>}
-                <div className="paginationRow">
-                  <button
-                    type="button"
-                    className="secondary"
-                    onClick={() => void loadVehicules(Math.max(vehiculePage - 1, 0))}
-                    disabled={vehiculePage <= 0 || vehiculeState === 'loading'}
-                  >
-                    Previous page
-                  </button>
-                  <span>
-                    Page {vehiculeTotalPages === 0 ? 0 : vehiculePage + 1} / {Math.max(vehiculeTotalPages, 1)}
-                  </span>
-                  <button
-                    type="button"
-                    className="secondary"
-                    onClick={() => void loadVehicules(vehiculePage + 1)}
-                    disabled={vehiculePage + 1 >= vehiculeTotalPages || vehiculeState === 'loading'}
-                  >
-                    Next page
-                  </button>
-                </div>
-
-                <div className="workspaceGrid">
-                  <form className="form" onSubmit={handleVehiculeSubmit}>
-                    <h3>{editingVehiculeId === null ? 'Create vehicule' : 'Edit vehicule'}</h3>
-
-                    <label>
-                      Societe ID
-                      <input
-                        value={vehiculeForm.societeId}
-                        onChange={(event) => setVehiculeForm((current) => ({
-                          ...current,
-                          societeId: event.target.value,
-                        }))}
-                        required
-                      />
-                    </label>
-
-                    <label>
-                      Entreprise ID
-                      <input
-                        value={vehiculeForm.entrepriseId}
-                        onChange={(event) => setVehiculeForm((current) => ({
-                          ...current,
-                          entrepriseId: event.target.value,
-                        }))}
-                        required
-                      />
-                    </label>
-
-                    <label>
-                      Employe
-                      <select
-                        value={vehiculeForm.employeId}
-                        onChange={(event) => setVehiculeForm((current) => ({
-                          ...current,
-                          employeId: event.target.value,
-                        }))}
-                      >
-                        <option value="">Unassigned</option>
-                        {employesForVehiculeEntreprise.map((employe) => (
-                          <option key={employe.id} value={String(employe.id)}>
-                            {employe.codeEmploye} - {employe.nomComplet}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
-
-                    {vehiculeForm.entrepriseId.trim().length > 0 && employesForVehiculeEntreprise.length === 0 && (
-                      <p className="subtitle">No active employe available for selected entreprise.</p>
-                    )}
-
-                    <label>
-                      Immatriculation
-                      <input
-                        value={vehiculeForm.immatriculation}
-                        onChange={(event) => setVehiculeForm((current) => ({
-                          ...current,
-                          immatriculation: event.target.value,
-                        }))}
-                        required
-                        maxLength={40}
-                      />
-                    </label>
-
-                    <label>
-                      Code flotte
-                      <input
-                        value={vehiculeForm.codeFlotte}
-                        onChange={(event) => setVehiculeForm((current) => ({
-                          ...current,
-                          codeFlotte: event.target.value,
-                        }))}
-                        maxLength={50}
-                      />
-                    </label>
-
-                    <label>
-                      Marque
-                      <input
-                        value={vehiculeForm.marque}
-                        onChange={(event) => setVehiculeForm((current) => ({
-                          ...current,
-                          marque: event.target.value,
-                        }))}
-                        maxLength={60}
-                      />
-                    </label>
-
-                    <label>
-                      Modele
-                      <input
-                        value={vehiculeForm.modele}
-                        onChange={(event) => setVehiculeForm((current) => ({
-                          ...current,
-                          modele: event.target.value,
-                        }))}
-                        maxLength={60}
-                      />
-                    </label>
-
-                    <label>
-                      Type carburant
-                      <select
-                        value={vehiculeForm.typeCarburant}
-                        onChange={(event) => setVehiculeForm((current) => ({
-                          ...current,
-                          typeCarburant: event.target.value as VehiculeTypeCarburant,
-                        }))}
-                      >
-                        <option value="DIESEL">DIESEL</option>
-                        <option value="GASOLINE">GASOLINE</option>
-                        <option value="GPL">GPL</option>
-                        <option value="ELECTRIC">ELECTRIC</option>
-                        <option value="OTHER">OTHER</option>
-                      </select>
-                    </label>
-
-                    <label>
-                      Capacite reservoir (litres)
-                      <input
-                        value={vehiculeForm.capaciteReservoirLitres}
-                        onChange={(event) => setVehiculeForm((current) => ({
-                          ...current,
-                          capaciteReservoirLitres: event.target.value,
-                        }))}
-                        placeholder="Ex: 60"
-                      />
-                    </label>
-
-                    <label className="checkboxLabel">
-                      <input
-                        type="checkbox"
-                        checked={vehiculeForm.actif}
-                        onChange={(event) => setVehiculeForm((current) => ({
-                          ...current,
-                          actif: event.target.checked,
-                        }))}
-                      />
-                      Actif
-                    </label>
-
-                    <div className="actionRow">
-                      <button type="submit" disabled={isVehiculeSubmitting}>
-                        {isVehiculeSubmitting
-                          ? 'Saving...'
-                          : editingVehiculeId === null
-                            ? 'Create vehicule'
-                            : 'Save changes'}
-                      </button>
-
-                      {editingVehiculeId !== null && (
-                        <button type="button" className="secondary" onClick={resetVehiculeForm}>
-                          Cancel edit
-                        </button>
-                      )}
-                    </div>
-
-                    {vehiculeFormError && <p className="errorText">{vehiculeFormError}</p>}
-                  </form>
-
-                  <div className="enterpriseList">
-                    {vehicules.length === 0 ? (
-                      <p className="subtitle">No vehicule found for current filters.</p>
-                    ) : (
-                      vehicules.map((vehicule) => (
-                        <article key={vehicule.id} className="enterpriseItem">
-                          <div className="enterpriseHead">
-                            <h3>{vehicule.immatriculation} - {vehicule.marque || 'N/A'} {vehicule.modele || ''}</h3>
-                            <span className={`badge ${vehicule.actif ? 'ok' : 'error'}`}>
-                              {vehicule.actif ? 'ACTIVE' : 'INACTIVE'}
-                            </span>
-                          </div>
-
-                          <p>Societe ID: {vehicule.societeId} | Entreprise ID: {vehicule.entrepriseId}</p>
-                          <p>Employe ID: {vehicule.employeId ?? 'Unassigned'}</p>
-                          <p>Type carburant: {vehicule.typeCarburant} | Code flotte: {vehicule.codeFlotte || 'N/A'}</p>
-
-                          <div className="actionRow">
-                            <button type="button" className="secondary" onClick={() => startEditVehicule(vehicule)}>
-                              Edit
-                            </button>
-                            <button
-                              type="button"
-                              className="warn"
-                              onClick={() => void handleVehiculeActif(vehicule.id, false)}
-                              disabled={!vehicule.actif}
-                            >
-                              Deactivate
-                            </button>
-                            <button
-                              type="button"
-                              className="okButton"
-                              onClick={() => void handleVehiculeActif(vehicule.id, true)}
-                              disabled={vehicule.actif}
-                            >
-                              Activate
-                            </button>
-                          </div>
-                        </article>
-                      ))
-                    )}
-                  </div>
-                </div>
-              </section>
+            {canManageReferential && activeModule === 'vehicules' && (
+              <VehiculesSection
+                vehiculeSocieteFilter={vehiculeSocieteFilter}
+                setVehiculeSocieteFilter={setVehiculeSocieteFilter}
+                vehiculeEntrepriseFilter={vehiculeEntrepriseFilter}
+                setVehiculeEntrepriseFilter={setVehiculeEntrepriseFilter}
+                vehiculeSearchFilter={vehiculeSearchFilter}
+                setVehiculeSearchFilter={setVehiculeSearchFilter}
+                vehiculeActifFilter={vehiculeActifFilter}
+                setVehiculeActifFilter={setVehiculeActifFilter}
+                vehiculeSort={vehiculeSort}
+                setVehiculeSort={setVehiculeSort}
+                vehiculeState={vehiculeState}
+                vehiculeTotal={vehiculeTotal}
+                vehiculeError={vehiculeError}
+                vehiculePage={vehiculePage}
+                vehiculeTotalPages={vehiculeTotalPages}
+                vehicules={vehicules}
+                loadVehicules={loadVehicules}
+                vehiculeForm={vehiculeForm}
+                setVehiculeForm={setVehiculeForm}
+                handleVehiculeSubmit={handleVehiculeSubmit}
+                editingVehiculeId={editingVehiculeId}
+                isVehiculeSubmitting={isVehiculeSubmitting}
+                resetVehiculeForm={resetVehiculeForm}
+                vehiculeFormError={vehiculeFormError}
+                startEditVehicule={startEditVehicule}
+                handleVehiculeActif={handleVehiculeActif}
+                employesForVehiculeEntreprise={employesForVehiculeEntreprise}
+              />
             )}
           </>
         ) : (
-          <>
-            <div className="tabs">
-              <button
-                type="button"
-                className={authMode === 'login' ? 'tab active' : 'tab'}
-                onClick={() => setAuthMode('login')}
-              >
-                Login
-              </button>
-              <button
-                type="button"
-                className={authMode === 'register' ? 'tab active' : 'tab'}
-                onClick={() => setAuthMode('register')}
-              >
-                Register
-              </button>
-            </div>
-
-            <form onSubmit={handleSubmit} className="form">
-              {authMode === 'register' && (
-                <label>
-                  Full Name
-                  <input
-                    value={name}
-                    onChange={(event) => setName(event.target.value)}
-                    required
-                    minLength={2}
-                  />
-                </label>
-              )}
-
-              <label>
-                Email
-                <input
-                  type="email"
-                  value={email}
-                  onChange={(event) => setEmail(event.target.value)}
-                  required
-                />
-              </label>
-
-              <label>
-                Password
-                <input
-                  type="password"
-                  value={password}
-                  onChange={(event) => setPassword(event.target.value)}
-                  required
-                  minLength={8}
-                />
-              </label>
-
-              <button type="submit" disabled={isSubmitting}>
-                {isSubmitting ? 'Please wait...' : authMode === 'login' ? 'Login' : 'Create account'}
-              </button>
-
-              {errorMessage && <p className="errorText">{errorMessage}</p>}
-            </form>
-          </>
+          <AuthScreen
+            authMode={authMode}
+            setAuthMode={setAuthMode}
+            name={name}
+            setName={setName}
+            email={email}
+            setEmail={setEmail}
+            password={password}
+            setPassword={setPassword}
+            onSubmit={handleSubmit}
+            isSubmitting={isSubmitting}
+            errorMessage={errorMessage}
+            healthState={healthState}
+            healthStatus={health?.status}
+            onCheckBackendHealth={checkBackendHealth}
+          />
         )}
+        <ToastStack toasts={toasts} onDismiss={dismissToast} />
       </section>
     </main>
   )

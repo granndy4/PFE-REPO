@@ -15,6 +15,8 @@ public interface EntrepriseContracteeRepository extends JpaRepository<Entreprise
 
     boolean existsBySocieteIdAndCodeEntrepriseAndIdNot(Long societeId, String codeEntreprise, Long id);
 
+  long countByStatut(EntrepriseStatut statut);
+
     @Query("""
             SELECT e
             FROM EntrepriseContractee e

@@ -14,6 +14,8 @@ public interface EmployeEntrepriseRepository extends JpaRepository<EmployeEntrep
 
     boolean existsByEntrepriseIdAndCodeEmployeAndIdNot(Long entrepriseId, String codeEmploye, Long id);
 
+  long countByActif(boolean actif);
+
     @Query("""
             SELECT e
             FROM EmployeEntreprise e

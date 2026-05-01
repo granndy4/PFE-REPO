@@ -15,6 +15,8 @@ public interface ContratRepository extends JpaRepository<Contrat, Long> {
 
     boolean existsBySocieteIdAndNumeroContratAndIdNot(Long societeId, String numeroContrat, Long id);
 
+  long countByStatut(ContratStatut statut);
+
     @Query("""
             SELECT c
             FROM Contrat c

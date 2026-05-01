@@ -11,6 +11,7 @@ import com.wtm.fuelvoucher.Entities.EntrepriseContractee;
 import com.wtm.fuelvoucher.Repositories.EmployeEntrepriseRepository;
 import com.wtm.fuelvoucher.Repositories.EntrepriseContracteeRepository;
 
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
@@ -116,6 +117,31 @@ public class EmployeService {
                 Map.of("actif", ancienActif),
                 Map.of("actif", updated.isActif()));
         return toResponse(updated);
+    }
+
+    @Transactional
+    public void delete(Long id, String username) {
+        EmployeEntreprise employe = findByIdOrThrow(id);
+        Map<String, Object> anciennesValeurs = toAuditPayload(employe);
+
+        try {
+            employeEntrepriseRepository.delete(employe);
+            employeEntrepriseRepository.flush();
+        } catch (DataIntegrityViolationException ex) {
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT,
+                    "Cannot delete employe because it is referenced by other records");
+        }
+
+        auditJournalService.enregistrer(
+                "REFERENTIEL_EMPLOYE",
+                "employes_entreprise",
+                id,
+                "DELETE",
+                employe.getSocieteId(),
+                username,
+                anciennesValeurs,
+                null);
     }
 
     private EmployeEntreprise findByIdOrThrow(Long id) {
